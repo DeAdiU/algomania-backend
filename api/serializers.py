@@ -11,6 +11,8 @@ class UserSerializer(serializers.ModelSerializer):
             email=validated_data['email']
         )
         user.password = validated_data['password']
+        user.name=validated_data['name']
+        user.leetcodeId=validated_data['leetcodeId']
         user.save()
         return user
     

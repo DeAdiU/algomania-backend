@@ -1,18 +1,26 @@
 from django.db import models
-
+from django.utils.text import slugify
+from enum import Enum
 # Create your models here.
 
-class User(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=128)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128)
-    score = models.IntegerField(default=0,null=True,blank=True)
-    leetcodeId = models.CharField(max_length=128, unique=True, null=True)
 
-    def __str__(self):
-        return self.email
-    
+
+class Difficulty(Enum):
+    EASY = "Easy"
+    MEDIUM = "Medium"
+    HARD = "Hard"
+
+    @classmethod
+    def choices(cls):
+        return [(key.value, key.name) for key in cls]
+
+class Category(models.TextChoices):
+    PROFESSOR = 'PROF', 'Professor'
+    NORMAL = 'NML', 'Normal'
+    BIWEEKLY = 'BIWL', 'Biweekly'
+    WEEKLY = 'WL', 'Weekly'
+    POTD = 'POTD', 'Problem of the day'
+
 
 class Team(models.Model):
     team_id = models.AutoField(primary_key=True)
@@ -22,24 +30,44 @@ class Team(models.Model):
     def __str__(self):
         return self.team_name
 
-class Member(models.Model):
-    member_id = models.AutoField(primary_key=True)
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='members')
-    member_name = models.CharField(max_length=255)
-    score = models.IntegerField()
-    password = models.CharField(max_length=255)
-    email = models.CharField(max_length=255)
+class User(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=128)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)
+    score = models.IntegerField(default=0,null=True,blank=True)
+    leetcodeId = models.CharField(max_length=128, unique=True, null=True)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='members', null=True, blank=True)
 
     def __str__(self):
-        return self.member_name
+        return self.email
+    
+
 
 class Submission(models.Model):
     question_id = models.AutoField(primary_key=True)
-    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='questions')
-    easy = models.IntegerField()
-    medium = models.IntegerField()
-    hard = models.IntegerField()
-    potd = models.IntegerField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='questions')
+    submission_id = models.IntegerField(unique=True)
+    category = models.CharField(max_length=10, choices=Category.choices)
+    title = models.CharField(max_length=255)
+    titleSlug = models.SlugField(max_length=255, unique=True)
+    difficulty = models.CharField(max_length=10, choices=Difficulty.choices())
+    points = models.IntegerField()
+    submission_time = models.DateTimeField()
+    createdAt = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Question {self.question_id} by {self.member}"
+
+
+class TeacherQuestion(models.Model):
+    id = models.AutoField(primary_key=True)
+    createdAt = models.DateTimeField(auto_now_add=True)
+    points = models.IntegerField()
+    title = models.CharField(max_length=255)
+    url = models.URLField()
+    titleSlug = models.SlugField(max_length=255, unique=True)
+    deadline = models.DateTimeField()
+
+    def __str__(self):
+        return f"TeacherQuestion {self.id} with {self.questions.count()} questions"

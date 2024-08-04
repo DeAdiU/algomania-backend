@@ -65,6 +65,7 @@ def get_profile(request):
 
     return Response({"user": user, "profile": profile_data}, status=status.HTTP_200_OK)
 
+
 def generate_jwt_token(user):
     payload = {
         'user_id': user.id,

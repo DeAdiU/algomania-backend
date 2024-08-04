@@ -39,7 +39,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'whitenoise.runserver_nostatic'
     'api',
     'corsheaders',
 ]
@@ -132,6 +131,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-STATIC_URL='/static/'
-STATIC_DIRS=[os.path.join(BASE_DIR,'static') ]
-STATIC_ROOT=os.path.join(BASE_DIR,'staticfiles')
+STATIC_URL='static/'

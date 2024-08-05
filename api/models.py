@@ -39,7 +39,7 @@ class User(models.Model):
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='members', null=True, blank=True)
 
     def __str__(self):
-        return self.email
+        return f"Submission {self.email} by {self.leetcodeId}"
     
 
 

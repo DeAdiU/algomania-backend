@@ -84,7 +84,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['POST'])
-def get_submissions(request):
+def push_submissions(request):
     try:
         user = get_user_from_token(request)
         leetcodeId = user['leetcodeId']

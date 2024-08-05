@@ -17,8 +17,7 @@ class Difficulty(Enum):
 class Category(models.TextChoices):
     PROFESSOR = 'PROF', 'Professor'
     NORMAL = 'NML', 'Normal'
-    BIWEEKLY = 'BIWL', 'Biweekly'
-    WEEKLY = 'WL', 'Weekly'
+    CONTEST = 'CONT', 'Contest'
     POTD = 'POTD', 'Problem of the day'
 
 
@@ -46,6 +45,7 @@ class User(models.Model):
 
 class Submission(models.Model):
     question_id = models.AutoField(primary_key=True)
+    leetcodeQuestionId = models.IntegerField(null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='questions')
     submission_id = models.IntegerField(unique=True)
     category = models.CharField(max_length=10, choices=Category.choices)
@@ -57,7 +57,7 @@ class Submission(models.Model):
     createdAt = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Question {self.question_id} by {self.member}"
+        return f"Submission {self.question_id} by {self.user}"
 
 
 class TeacherQuestion(models.Model):

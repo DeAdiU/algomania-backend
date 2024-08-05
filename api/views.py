@@ -2,13 +2,14 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import UserSerializer
-from .models import User
-from .graphql import get_user_profile
+from .serializers import UserSerializer, SubmissionSerializer, ProfQuesSerializer
+from .models import User, Submission, TeacherQuestion
+from .graphql import get_user_profile, get_the_solution, get_day_questions, get_question_of_the_day, get_question_details
 import datetime
 import jwt  
 from django.conf import settings
 from rest_framework.decorators import api_view
+from rest_framework import viewsets
 
 
 class SignupView(APIView):
@@ -32,6 +33,7 @@ class LoginView(APIView):
             return Response({'error': 'Invalid password'}, status=status.HTTP_400_BAD_REQUEST)
         except User.DoesNotExist:
             return Response({'error': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 def get_user_from_token(request):
@@ -74,3 +76,53 @@ def generate_jwt_token(user):
     }
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
     return token
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = Submission.objects.all()
+    serializer_class = SubmissionSerializer
+
+
+@api_view(['POST'])
+def get_submissions(request):
+    try:
+        user = get_user_from_token(request)
+        leetcodeId = user['leetcodeId']
+        potd=get_question_of_the_day()
+        all_submissions=get_day_questions(leetcodeId)
+        
+        prof_ques=TeacherQuestion.objects.all()
+        serializer = ProfQuesSerializer(prof_ques, many=True)
+        for i in all_submissions:
+            solution=get_the_solution(leetcodeId,potd,serializer.data,i)
+            solution['user']=user['id']
+            submission_id = solution['submission_id']
+            if Submission.objects.filter(submission_id=submission_id).exists():
+                print('no')
+                continue
+            serializer=SubmissionSerializer(data=solution)
+            if serializer.is_valid():
+                serializer.save()
+                print('yes')
+        
+        done_submissions=Submission.objects.filter(user=user['id'])
+        serializer=SubmissionSerializer(done_submissions, many=True)
+        return Response({'message':'inserted everything','data':serializer.data}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_submissions(request):
+    try :
+        user=get_user_from_token(request)
+        done_submissions=Submission.objects.filter(user=user['id'])
+        serializer=SubmissionSerializer(done_submissions, many=True)
+        return Response({'message':'inserted everything','data':serializer.data}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ProfQuesViewSet(viewsets.ModelViewSet):
+    queryset = TeacherQuestion.objects.all()
+    serializer_class = ProfQuesSerializer

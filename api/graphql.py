@@ -1,6 +1,6 @@
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 
 # Define the URL for the GraphQL endpoint
@@ -9,6 +9,14 @@ headers = {
     'Content-Type': 'application/json',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 }
+
+def epoch_to_iso8601(epoch_timestamp, include_microseconds=False):
+    dt = datetime.fromtimestamp(epoch_timestamp, tz=timezone.utc)
+    if include_microseconds:
+        iso8601_string = dt.isoformat(timespec='microseconds')
+    else:
+        iso8601_string = dt.isoformat()
+    return iso8601_string
 
 
 def get_user_profile(username):
@@ -107,11 +115,10 @@ def get_question_details(titleSlug):
     if response.status_code == 200:
         # Extract the data from the response
         data = response.json()
-        return data
+        return data['data']['question']
     else:
         raise Exception(f"Query failed with status code {response.status_code}")
-
-def get_day_questions(username,solved_date):
+def get_day_questions(username):
     query = """
     query recentAcSubmissions($username: String!) {
       recentAcSubmissionList(username: $username) {
@@ -131,32 +138,38 @@ def get_day_questions(username,solved_date):
     "operationName": "recentAcSubmissions"
     }
 
-    problem=[]
 
 # Send the POST request to the GraphQL endpoint
     response = requests.post(url, headers=headers, data=json.dumps(payload))
-    print(solved_date)
-    twenty_four_hr=60*60*24
-    current_time=int(time.time())
-    print(current_time)
-    twenty_four_hr=60*60*24
-    human_readable_date = datetime.fromtimestamp(current_time).strftime('%d-%m-%Y')
-
-# Convert the human-readable date back to a datetime object
-    date_object = datetime.strptime(human_readable_date, '%d-%m-%Y')
-    epoch_time = int(date_object.timestamp())
-
-# Convert the human-readable date back to a datetime object
-    date_object = datetime.strptime(solved_date, '%d-%m-%Y')
-    start_time = int(date_object.timestamp())
-    end_time=start_time+twenty_four_hr
-    print(start_time)
-    print(end_time)
+    
     # Print the response
     data  = response.json()['data']['recentAcSubmissionList']
-    print(data)
-    print(len(data))
-    for i in data:
-        if start_time<= int(i['timestamp'])<epoch_time :
-            problem.append(i)
-    return problem
+    return data
+
+def get_the_solution(username,potd,teachers_questions,submission):
+    solution={}
+    solution['leetcodeQuestionId']=get_question_details(submission['titleSlug'])['questionFrontendId']
+    solution['submission_id']=submission['id']
+    solution['title']=submission['title']
+    solution['titleSlug']=submission['titleSlug']
+    solution['submission_time']=epoch_to_iso8601(int(submission['timestamp']))
+    if submission['titleSlug']==potd['titleSlug']:
+      solution['difficulty']=get_question_details(i['titleSlug'])['difficulty']
+      solution['points']=4
+      solution['category']='POTD'
+    elif submission['titleSlug'] in teachers_questions:
+      solution['difficulty']=get_question_details(i['titleSlug'])['difficulty']
+      solution['points']=5
+      solution['category']='PROF'
+    else:
+      solution['category']='NML'
+      if get_question_details(submission['titleSlug'])['difficulty']=='Easy':
+        solution['points']=1
+        solution['difficulty']='Easy'
+      elif get_question_details(submission['titleSlug'])['difficulty']=='Medium':
+        solution['points']=2
+        solution['difficulty']='Medium'
+      elif get_question_details(submission['titleSlug'])['difficulty']=='Hard':
+        solution['points']=3
+        solution['difficulty']='Hard'
+    return solution

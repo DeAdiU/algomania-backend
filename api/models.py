@@ -24,7 +24,6 @@ class Category(models.TextChoices):
 class Team(models.Model):
     team_id = models.AutoField(primary_key=True)
     team_name = models.CharField(max_length=255)
-    Score = models.IntegerField()
 
     def __str__(self):
         return self.team_name
@@ -57,7 +56,7 @@ class Submission(models.Model):
     createdAt = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Submission {self.question_id} by {self.user}"
+        return f"Submission {self.question_id} by {self.user} and {self.leetcodeQuestionId}"
 
 
 class TeacherQuestion(models.Model):

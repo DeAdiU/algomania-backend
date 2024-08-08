@@ -2,8 +2,8 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import UserSerializer, SubmissionSerializer, ProfQuesSerializer
-from .models import User, Submission, TeacherQuestion
+from .serializers import UserSerializer, SubmissionSerializer, ProfQuesSerializer, TeamSerializer
+from .models import User, Submission, TeacherQuestion,Team
 from .graphql import get_user_profile, get_the_solution, get_day_questions, get_question_of_the_day, get_question_details
 import datetime
 import jwt  
@@ -88,30 +88,34 @@ def push_submissions(request):
     try:
         user = get_user_from_token(request)
         leetcodeId = user['leetcodeId']
-        potd=get_question_of_the_day()
-        all_submissions=get_day_questions(leetcodeId)
-        
-        prof_ques=TeacherQuestion.objects.all()
+        potd = get_question_of_the_day()
+        all_submissions = get_day_questions(leetcodeId)
+        prof_ques = TeacherQuestion.objects.all()
         serializer = ProfQuesSerializer(prof_ques, many=True)
+        
+        user_instance = User.objects.get(id=user['id'])
+        
         for i in all_submissions:
-            solution=get_the_solution(leetcodeId,potd,serializer.data,i)
-            solution['user']=user['id']
+            solution = get_the_solution(leetcodeId, potd, serializer.data, i)
+            solution['user'] = user['id']
             submission_id = solution['submission_id']
             if Submission.objects.filter(submission_id=submission_id).exists():
                 print('no')
-                continue
-            serializer=SubmissionSerializer(data=solution)
-            if serializer.is_valid():
-                serializer.save()
-                print('yes')
+                break
+            else:
+                submission_serializer = SubmissionSerializer(data=solution)
+                if submission_serializer.is_valid():
+                    submission_serializer.save()
+                    print('yes')
+                    user_instance.score += solution['points']
         
-        done_submissions=Submission.objects.filter(user=user['id'])
-        serializer=SubmissionSerializer(done_submissions, many=True)
-        return Response({'message':'inserted everything','data':serializer.data}, status=status.HTTP_200_OK)
+        user_instance.save()
+        
+        return Response({'message': 'Submissions processed and score updated'}, status=status.HTTP_200_OK)
 
-    except Exception as e:
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
 @api_view(['GET'])
 def get_submissions(request):
     try :
@@ -126,3 +130,36 @@ def get_submissions(request):
 class ProfQuesViewSet(viewsets.ModelViewSet):
     queryset = TeacherQuestion.objects.all()
     serializer_class = ProfQuesSerializer
+
+
+class TeamViewSet(viewsets.ModelViewSet):
+    queryset = Team.objects.all()
+    serializer_class = TeamSerializer
+
+@api_view(['PATCH'])
+def update_team_id(request):
+    try:
+        user = get_user_from_token(request)
+        team_id = request.data.get('team_id')
+
+        if not team_id:
+            return Response({'error': 'team_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Fetch the Team instance using the correct field name
+        try:
+            team_instance = Team.objects.get(team_id=team_id)
+        except Team.DoesNotExist:
+            return Response({'error': 'Team not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        user_instance = User.objects.get(id=user['id'])  # Ensure 'id' is the correct field for the User model
+        user_instance.team = team_instance  # Assign the Team instance
+        user_instance.save()
+        
+        return Response({'message': 'Team ID updated successfully'}, status=status.HTTP_200_OK)
+    
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+      

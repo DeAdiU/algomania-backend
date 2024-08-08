@@ -154,11 +154,11 @@ def get_the_solution(username,potd,teachers_questions,submission):
     solution['titleSlug']=submission['titleSlug']
     solution['submission_time']=epoch_to_iso8601(int(submission['timestamp']))
     if submission['titleSlug']==potd['titleSlug']:
-      solution['difficulty']=get_question_details(i['titleSlug'])['difficulty']
+      solution['difficulty']=get_question_details(submission['titleSlug'])['difficulty']
       solution['points']=4
       solution['category']='POTD'
     elif submission['titleSlug'] in teachers_questions:
-      solution['difficulty']=get_question_details(i['titleSlug'])['difficulty']
+      solution['difficulty']=get_question_details(submission['titleSlug'])['difficulty']
       solution['points']=5
       solution['category']='PROF'
     else:

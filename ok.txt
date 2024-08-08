@@ -1,7 +1,0 @@
-
-
-
-curl --location 'https://leetcode.com/api/submissions/?offset=0&limit=20&lastkey=/' \
---header 'Content-Type: application/json' \
---header 'Cookie: csrftoken=HUP1viR6MKZtqzU3NkjfArKQYNX5w06QdDPovPFokoGLvhaz6p4PMihDg8vOJf59; _ga_CDRWKZTDEX=GS1.1.1723005827.32.1.1723005839.48.0.0; _ga=GA1.1.812795187.1719384745; gr_user_id=8eee3b47-b4ed-4684-82ef-16d4796934ec; 87b5a3c3f1a55520_gr_last_sent_cs1=uttarwaraditya29; __stripe_mid=4a5dde13-429d-433e-aabb-2a53c0af9ae50c1ac6; _gid=GA1.2.1003126255.1722962376; ip_check=(false, "103.182.159.5"); cf_clearance=dvK5f8J_4J7ttekLWL.SQ15REqS2TtSBx1E8Zl6aggI-1722964431-1.0.1.1-_TOVC9BKTYckPpYbOLz9c0iSelTXuK7UdQdzDaZyMSonU…tNYJRzAExxUI1FezCyTvJPFEbMbz5XSLN6iCvfpc; __cf_bm=uvOeW2OI4NIdNe5efxYgMw99ql.g_0E4MoshvEEC.lA-1723005823-1.0.1.1-o9Jq9UTHXnZQJu01Ska8pL7ZIshfNoRanzSwyM5kyJcaOFQNOnyWasQkuqfIkew8xIAS6eKWe9kCczKEZlftiw; _gat=1; _dd_s=rum=0&expire=1723006735765; 87b5a3c3f1a55520_gr_session_id=c774d017-684e-4cce-878e-c1b70467cb8e; 87b5a3c3f1a55520_gr_last_sent_sid_with_cs1=c774d017-684e-4cce-878e-c1b70467cb8e; 87b5a3c3f1a55520_gr_cs1=uttarwaraditya29; 87b5a3c3f1a55520_gr_session_id_sent_vst=c774d017-684e-4cce-878e-c1b70467cb8e' \
---header 'Referer: https://leetcode.com/submissions/'

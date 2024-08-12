@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from .serializers import UserSerializer, SubmissionSerializer, ProfQuesSerializer, TeamSerializer
+from rest_framework import status,generics
+from .serializers import UserSerializer, SubmissionSerializer, ProfQuesSerializer, TeamSerializer, TeamUserSerializer,UserQuesWiseSerializer,TeamQuesSerializer
 from .models import User, Submission, TeacherQuestion,Team
 from .graphql import get_user_profile, get_the_solution, get_day_questions, get_question_of_the_day, get_question_details
 import datetime
@@ -27,9 +27,11 @@ class LoginView(APIView):
         password = request.data.get('password')
         try:
             user = User.objects.get(email=email)
+            user_type = user.user_type
+            serializer = TeamUserSerializer(user)
             if user.password == password:
                 token = generate_jwt_token(user)
-                return Response({'token': token}, status=status.HTTP_200_OK)
+                return Response({'token': token, 'user_type': user_type, 'user':serializer.data}, status=status.HTTP_200_OK)
             return Response({'error': 'Invalid password'}, status=status.HTTP_400_BAD_REQUEST)
         except User.DoesNotExist:
             return Response({'error': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
@@ -117,12 +119,14 @@ def push_submissions(request):
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
 @api_view(['GET'])
-def get_submissions(request):
+def get_recent_submissions(request):
     try :
         user=get_user_from_token(request)
         done_submissions=Submission.objects.filter(user=user['id'])
         serializer=SubmissionSerializer(done_submissions, many=True)
-        return Response({'message':'inserted everything','data':serializer.data}, status=status.HTTP_200_OK)
+        data=serializer.data
+        data.sort(key=lambda x: datetime.datetime.strptime(x['submission_time'], "%Y-%m-%dT%H:%M:%SZ").timestamp(),reverse=True)
+        return Response({'message':'inserted everything','data':data[:10]}, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -134,7 +138,7 @@ class ProfQuesViewSet(viewsets.ModelViewSet):
 
 class TeamViewSet(viewsets.ModelViewSet):
     queryset = Team.objects.all()
-    serializer_class = TeamSerializer
+    serializer_class = TeamQuesSerializer
 
 @api_view(['PATCH'])
 def update_team_id(request):
@@ -163,3 +167,73 @@ def update_team_id(request):
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
       
+
+@api_view(['GET'])
+def get_teams(request):
+    try:
+        user = get_user_from_token(request)
+        team_id = user['team']
+        if not team_id:
+            return Response({'error': 'Team not found'}, status=status.HTTP_404_NOT_FOUND)
+        team_f = Team.objects.get(team_id=team_id)
+    except Team.DoesNotExist:
+        return Response({'error': 'Team not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = TeamSerializer(team_f)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def get_top(request):
+    try:
+        user=get_user_from_token(request)
+        user_top=User.objects.all().order_by('-score')[:1]
+        serializer = UserSerializer(user_top, many=True)
+        user_data = serializer.data
+        print(user_data)
+        teams_data = TeamSerializer(Team.objects.all(), many=True).data
+        teams_data.sort(key=lambda x: x['team_score'], reverse=True)
+        print(teams_data)
+        team_id = user['team']
+        team_f = Team.objects.get(team_id=team_id)
+        serializer = TeamSerializer(team_f)
+        return Response({"team": teams_data, "user": user_data, "user_team": serializer.data}, status=status.HTTP_200_OK)
+        
+    except Team.DoesNotExist:
+        return Response({'error': 'Team not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+def user_detail(request):
+    user = get_user_from_token(request)
+    
+    if user is None:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = UserQuesWiseSerializer(user)
+    data=serializer.data
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def all_teams_summary(request):
+    teams = Team.objects.all()
+    serializer = TeamQuesSerializer(teams, many=True)
+    data=serializer.data
+    teamsData=[]
+    for i in data:
+        ok_temp={}
+        ok_temp['teamName']=i['team_name']
+        ok_temp['members']=[]
+        for j in i['members']:
+            temp={}
+            temp['name']=j['name']
+            temp['points']=j['score']
+            temp['easy']=j['difficulty_wise']['Easy']
+            temp['medium']=j['difficulty_wise']['Medium']
+            temp['hard']=j['difficulty_wise']['Hard']
+            temp['potd']=j['category_wise']['POTD']
+            temp['staff']=j['category_wise']['PROF']
+            ok_temp['members'].append(temp)
+        teamsData.append(ok_temp)
+    print(teamsData)
+    return Response(teamsData, status=status.HTTP_200_OK)

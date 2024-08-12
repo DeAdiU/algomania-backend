@@ -27,6 +27,9 @@ class Team(models.Model):
 
     def __str__(self):
         return self.team_name
+class UserType(models.TextChoices):
+    PROFESSOR = 'PROF', 'Professor'
+    STUDENT = 'STUD', 'Student'
 
 class User(models.Model):
     id = models.AutoField(primary_key=True)
@@ -36,7 +39,7 @@ class User(models.Model):
     score = models.IntegerField(default=0,null=True,blank=True)
     leetcodeId = models.CharField(max_length=128, unique=True, null=True)
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='members', null=True, blank=True)
-
+    user_type = models.CharField(max_length=50,choices=UserType.choices,default=UserType.STUDENT)
     def __str__(self):
         return f"Submission {self.email} by {self.leetcodeId}"
     

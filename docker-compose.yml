@@ -1,5 +1,3 @@
-# docker-compose.yml
-
 version: '3.8'
 
 services:
@@ -15,15 +13,25 @@ services:
 
   redis:
     image: redis:latest
+    ports:
+      - "6379:6379"  # Exposing the Redis port for visibility (optional)
 
   celery:
     build: .
     command: celery -A algomania worker --loglevel=info
     depends_on:
       - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0  # Correct URL for Celery
 
   beat:
     build: .
     command: celery -A algomania beat --loglevel=info
     depends_on:
       - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0  # Correct URL for Beat
+
+networks:
+  default:
+    driver: bridge

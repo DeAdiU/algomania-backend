@@ -36,6 +36,12 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+CELERY_BEAT_SCHEDULE = {
+    'call-drf-endpoint-every-hour': {
+        'task': 'myapp.tasks.call_drf_endpoint',
+        'schedule': crontab(minute=0, hour='*'),  # Runs every hour at minute 0
+    },
+}
 
 
 # Application definition

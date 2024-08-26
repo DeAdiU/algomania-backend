@@ -20,7 +20,7 @@ app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
     'call-drf-endpoint-every-hour': {
-        'task': 'myapp.tasks.call_drf_endpoint',
+        'task': 'api.tasks.call_drf_endpoint',
         'schedule': crontab(minute=0, hour='*'),  # Runs every hour at minute 0
     },
 }
